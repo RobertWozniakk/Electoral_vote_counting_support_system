@@ -9,7 +9,7 @@ model = pickle.load(open(MODEL_PATH, "rb"))
 
 def check_if_empty(grid):
     flatten_data = []
-    img_resized = resize(grid, GRID_SHAPE )
+    img_resized = resize(grid, GRID_SHAPE)
     flatten_data.append(img_resized.flatten())
     flatten_data = np.array(flatten_data)
 
