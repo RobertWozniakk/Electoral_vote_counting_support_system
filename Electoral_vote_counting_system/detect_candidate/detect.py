@@ -1,13 +1,12 @@
 import cv2
 from util import get_grid_boxes, check_if_empty
-import numpy as np
-MASK = 'assets/mask.jpg'
-MASK = cv2.imread(MASK, 0)
+from consts import MASK_PATH
 
 
 def get_candidate(img_path: str):
+    mask = cv2.imread(MASK_PATH,0)
     ballot = cv2.imread(img_path)
-    connected_comps = cv2.connectedComponentsWithStats(MASK, 4, cv2.CV_32S)
+    connected_comps = cv2.connectedComponentsWithStats(mask, 4, cv2.CV_32S)
     boxes = get_grid_boxes(connected_comps)
     for box_idx, box in enumerate(boxes):
         x1, y1, w, h = boxes[box_idx]
