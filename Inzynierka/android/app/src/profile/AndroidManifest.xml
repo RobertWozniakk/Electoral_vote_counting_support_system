@@ -1,8 +1,7 @@
-<manifest> xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.inzynierka">
     <application>
         android:usesCleartextTraffic="true" <!-- Dodaj to, aby zezwolić na ruch HTTP -->
-        android:label="yourapp"
-        android:icon="@mipmap/ic_launcher">
-        ...
+
     </application>
 </manifest>
