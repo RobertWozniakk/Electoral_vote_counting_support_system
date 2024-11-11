@@ -1,0 +1,19 @@
+
+MASK_PATH: str = 'assets/mask.jpg'
+TESSERACT_CMD_PATH: str = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+TES_LANG: str = 'pol'
+BALLOT_PATH: str = 'assets/ballot.jpg'
+EMPTY: bool = False
+FILLED: bool = True
+MINAREA: int = 15*15
+MODEL_PATH: str = 'model.p'
+GRID_SHAPE: tuple = (15, 15, 3)
+BOX_COLOR: str = "white"
+BOX_SIZE: int = 15
+GAP: int = 36
+TOP_MARGIN: int = 648
+LEFT_MARGIN: int = 294
+BACKGROUND: str = 'assets/mask_generator.jpg'
+MIN_BOXES: int = 0
+MAX_BOXES: int = 15
+READ_ERROR: str = "can't read candidate"
