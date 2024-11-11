@@ -2,7 +2,7 @@ from PIL import Image, ImageDraw
 from consts import BOX_COLOR, BOX_SIZE, GAP, TOP_MARGIN, LEFT_MARGIN, MASK_PATH, BACKGROUND, MIN_BOXES, MAX_BOXES
 
 
-def generate_image_with_boxes(input_image_path: str, num_boxes: int, output_image_path: str):
+def generate_mask(input_image_path: str, num_boxes: int, output_image_path: str):
 
     image = Image.open(input_image_path)
     draw = ImageDraw.Draw(image)
@@ -21,4 +21,4 @@ if __name__ == "__main__":
     input_image_path = BACKGROUND
     output_image_path = MASK_PATH
     num_boxes = 11
-    generate_image_with_boxes(input_image_path, num_boxes, output_image_path)
+    generate_mask(input_image_path, num_boxes, output_image_path)

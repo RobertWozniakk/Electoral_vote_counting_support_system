@@ -2,11 +2,13 @@ import base64
 from fastapi import FastAPI
 from pydantic import BaseModel
 from read_name import read_name
-from generate_mask import generate_image_with_boxes
+from generate_mask import generate_mask
 app = FastAPI()
 
+
 class ImgModel(BaseModel):
-    img:str
+    img: str
+
 
 @app.get('/')
 async def root():
@@ -27,5 +29,5 @@ async def get_candidate(image: ImgModel):
 
 @app.post('/{candidates}')
 async def give_mask(candidates: int):
-    generate_image_with_boxes(candidates)
+    generate_mask(candidates)
     return {'mask': 'generated'}
