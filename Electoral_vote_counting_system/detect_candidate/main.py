@@ -26,8 +26,12 @@ async def get_candidate(image: ImgModel):
     except Exception as e:
         return {'error': str(e)}
 
+@app.post('/test')
+async def test():
+    return 'test'
 
 @app.post('/{candidates}')
 async def give_mask(candidates: int):
     generate_mask(candidates)
     return {'mask': 'generated'}
+
