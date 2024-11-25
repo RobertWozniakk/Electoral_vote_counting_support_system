@@ -34,3 +34,19 @@ def get_grid_boxes(components):
         if w*h >= MINAREA:
             boxes.append([x1, y1, w, h])
     return boxes
+
+
+def check_pesel(pesel: str) -> False:
+    try:
+        weights = [1, 3, 7, 9, 1, 3, 7, 9, 1, 3]
+        control_numer = int(pesel[-1])
+        numbers = pesel[:-1]
+        sum = 0
+        for i, num in enumerate(numbers):
+            sum += int(num) * weights[i]
+        sum = 10 - sum % 10
+        if sum == 10:
+            sum = 0
+        return sum == control_numer
+    except:
+        return False
