@@ -36,7 +36,7 @@ def get_grid_boxes(components):
     return boxes
 
 
-def check_pesel(pesel: str) -> False:
+def check_pesel(pesel: str):
     try:
         weights = [1, 3, 7, 9, 1, 3, 7, 9, 1, 3]
         control_numer = int(pesel[-1])

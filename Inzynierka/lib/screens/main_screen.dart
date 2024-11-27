@@ -3,9 +3,9 @@ import 'package:camera/camera.dart';
 
 
 class MainScreen extends StatefulWidget {
-  final String username;
+  final String pesel;
 
-  MainScreen({required this.username});
+  MainScreen({required this.pesel});
 
   @override
   _MainScreenState createState() => _MainScreenState();
@@ -13,12 +13,19 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   final List<String> candidates = []; // String przechowujący listę kandydatów
-
+  final int maxCandidates = 14;
   // Dodawanie kandydatów
   void _addCandidate(String name) {
-    setState(() {
-      candidates.add(name);
-    });
+    if (candidates.length < maxCandidates) {
+      setState(() {
+        candidates.add(name);
+      });
+    } else {
+      // Wyświetl komunikat, że osiągnięto limit
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Osiągnięto maksymalną liczbę kandydatów ($maxCandidates).")),
+      );
+    }
   }
 
   // Usuwanie kandydatów
@@ -73,7 +80,7 @@ class _MainScreenState extends State<MainScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "Witaj, ${widget.username}, wprowadź dane kandydatów.",
+              "Witaj, ${widget.pesel}, wprowadź dane kandydatów.",
               style: TextStyle(fontSize: 20),
             ),
             SizedBox(height: 20),

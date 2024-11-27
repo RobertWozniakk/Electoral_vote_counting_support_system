@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'main_screen.dart';
-
+import 'package:flutter/services.dart';
+import '../fastapi/api_service.dart';  // Zaimportuj ApiService do sprawdzania PESEL
+import 'main_screen.dart';  // Przekierowanie po poprawnym PESEL
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -9,36 +10,32 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController();
-  final _passwordController = TextEditingController();
+  final _peselController = TextEditingController();
 
-  void _login() async {
+  // Funkcja do walidacji PESEL
+  void _validatePesel() async {
     if (_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Logowanie...")),
+        SnackBar(content: Text("Sprawdzanie PESEL...")),
       );
 
-      await Future.delayed(Duration(seconds: 1)); // Symulacja opóźnienia
+      // Użycie ApiService do walidacji PESEL
+      final isValid = await ApiService.validatePesel(_peselController.text);
 
-      const mockUsername = "testuser";
-      const mockPassword = "testpassword";
-
-      if (_usernameController.text == mockUsername &&
-          _passwordController.text == mockPassword) {
+      if (isValid) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Zalogowano pomyślnie")),
+          SnackBar(content: Text("PESEL jest poprawny!")),
         );
-
-        // Przejdź do MainScreen z nazwą użytkownika
+        // Przejdź na kolejny ekran (MainScreen)
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => MainScreen(username: _usernameController.text),
+            builder: (context) => MainScreen(pesel: _peselController.text),
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Niepoprawna nazwa użytkownika lub hasło")),
+          SnackBar(content: Text("PESEL jest niepoprawny.")),
         );
       }
     }
@@ -56,32 +53,25 @@ class _LoginScreenState extends State<LoginScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               TextFormField(
-                controller: _usernameController,
-                decoration: InputDecoration(labelText: "LOGIN"),
-                autocorrect: false,
-                enableSuggestions: false,
+                controller: _peselController,
+                decoration: InputDecoration(labelText: "PESEL"),
+                maxLength: 11,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly], // Pozwól tylko na cyfry
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return "Wprowadź nazwę użytkownika";
+                    return "Wprowadź numer PESEL";
                   }
-                  return null;
-                },
-              ),
-              TextFormField(
-                controller: _passwordController,
-                decoration: InputDecoration(labelText: "Hasło"),
-                obscureText: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return "Wprowadź hasło";
+                  if (value.length != 11) {
+                    return "PESEL musi mieć 11 znaków";
                   }
                   return null;
                 },
               ),
               SizedBox(height: 20),
               ElevatedButton(
-                onPressed: _login,
-                child: Text("Zaloguj się"),
+                onPressed: _validatePesel,
+                child: Text("Sprawdź PESEL"),
               ),
             ],
           ),

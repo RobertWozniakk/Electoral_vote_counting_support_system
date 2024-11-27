@@ -44,5 +44,6 @@ async def give_mask(candidates: int):
 
 
 @app.post('/login/{pesel}')
-async def check_login(pesel: str) -> bool:
-    return check_pesel(pesel)
+async def check_login(pesel: str):
+    is_valid = check_pesel(pesel)
+    return {"valid": is_valid}
