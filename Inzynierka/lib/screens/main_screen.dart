@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
-
+import 'package:flutter/services.dart';
+import '../fastapi/api_service.dart';
 
 class MainScreen extends StatefulWidget {
   final String pesel;
@@ -47,6 +50,13 @@ class _MainScreenState extends State<MainScreen> {
           content: TextField(
             controller: _nameController,
             decoration: InputDecoration(labelText: "Imię i nazwisko"),
+            keyboardType: TextInputType.text,
+            enableSuggestions: false,
+            autocorrect: false,
+            enableInteractiveSelection: false,
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'[A-Za-zĄąĆćĘęŁłŃńÓóŚśŹźŻż ]')),
+            ],
           ),
           actions: [
             TextButton(
@@ -111,16 +121,31 @@ class _MainScreenState extends State<MainScreen> {
             Center(
               child: ElevatedButton(
                 onPressed: () async {
-                  // Pobierz dostępne kamery
-                  final cameras = await availableCameras();
+                  if (candidates.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("Dodaj co najmniej jednego kandydata przed przejściem do kamery!")),
+                    );
+                    return;
+                  }
 
-                  // Przejdź do ekranu kamery
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => CameraScreen(cameras: cameras),
-                    ),
-                  );
+                  // Wysyłanie listy kandydatów do backendu
+                  String? mask = await ApiService.generateMask(candidates);
+                  if (mask != null) {
+                    // Pobierz dostępne kamery
+                    final cameras = await availableCameras();
+
+                    // Przejdź do ekranu kamery z maską
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CameraScreen(cameras: cameras, mask: mask),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("Błąd podczas generowania maski.")),
+                    );
+                  }
                 },
                 child: Text("Przejdź do skanowania kart wyborczych"),
               ),
@@ -135,8 +160,12 @@ class _MainScreenState extends State<MainScreen> {
 // Ekran kamery
 class CameraScreen extends StatefulWidget {
   final List<CameraDescription> cameras;
-
-  CameraScreen({required this.cameras});
+  final String mask;
+  const CameraScreen({
+    Key? key,
+    required this.cameras,
+    required this.mask,
+  }) : super(key: key);
 
   @override
   _CameraScreenState createState() => _CameraScreenState();
@@ -145,6 +174,7 @@ class CameraScreen extends StatefulWidget {
 class _CameraScreenState extends State<CameraScreen> {
   late CameraController _controller;
   bool _isCameraInitialized = false;
+  Image? _maskImage;
 
   @override
   void initState() {
@@ -152,7 +182,7 @@ class _CameraScreenState extends State<CameraScreen> {
     if (widget.cameras.isNotEmpty) {
       _controller = CameraController(
         widget.cameras[0], // Wybierz pierwszą dostępną kamerę
-        ResolutionPreset.low,
+        ResolutionPreset.ultraHigh,
       );
       _controller.initialize().then((_) {
         if (!mounted) return;
@@ -161,6 +191,12 @@ class _CameraScreenState extends State<CameraScreen> {
         });
       });
     }
+
+    // Dekodowanie maski base64 na obraz
+    final bytes = base64Decode(widget.mask);
+    setState(() {
+      _maskImage = Image.memory(bytes);
+    });
   }
 
   @override
@@ -181,6 +217,13 @@ class _CameraScreenState extends State<CameraScreen> {
       body: Stack(
         children: [
           CameraPreview(_controller),
+          if (_maskImage != null)
+            Positioned.fill(
+              child: Opacity(
+                opacity: 0.5,
+                child: _maskImage, // Wyświetlenie maski na podglądzie kamery
+              ),
+            ),
           Positioned(
             bottom: 20,
             left: 0,

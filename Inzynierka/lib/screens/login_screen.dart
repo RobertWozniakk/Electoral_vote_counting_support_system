@@ -57,6 +57,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 decoration: InputDecoration(labelText: "PESEL"),
                 maxLength: 11,
                 keyboardType: TextInputType.number,
+                enableInteractiveSelection: false,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly], // Pozwól tylko na cyfry
                 validator: (value) {
                   if (value == null || value.isEmpty) {

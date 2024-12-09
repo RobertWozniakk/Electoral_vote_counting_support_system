@@ -1,9 +1,10 @@
 import base64
 import os
+from typing import List
 from fastapi import FastAPI
 from pydantic import BaseModel
 from read_name import read_name
-from generate_mask import generate_mask
+from generate_mask import process_ballot
 from util import check_pesel
 from consts import BACKGROUND, MASK_PATH
 app = FastAPI()
@@ -35,12 +36,16 @@ async def test():
     return 'test'
 
 
-@app.post('/mask/{candidates}')
-async def give_mask(candidates: int):
+@app.post('/mask')
+async def give_mask(candidates: List[str]):
     if os.path.exists(MASK_PATH):
         os.remove(MASK_PATH)
-    generate_mask(BACKGROUND, candidates, MASK_PATH)
-    return {'mask': 'generated'}
+    process_ballot(candidates)
+
+    with open(MASK_PATH, "rb") as mask_file:
+        mask_base64 = base64.b64encode(mask_file.read()).decode("utf-8")
+
+    return {'mask': mask_base64}
 
 
 @app.post('/login/{pesel}')
