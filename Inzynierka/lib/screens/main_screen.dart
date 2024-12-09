@@ -129,7 +129,7 @@ class _MainScreenState extends State<MainScreen> {
                   }
 
                   // Wysyłanie listy kandydatów do backendu
-                  String? mask = await ApiService.generateMask(candidates);
+                  String? mask = await ApiService.generateMask(candidates.length);
                   if (mask != null) {
                     // Pobierz dostępne kamery
                     final cameras = await availableCameras();

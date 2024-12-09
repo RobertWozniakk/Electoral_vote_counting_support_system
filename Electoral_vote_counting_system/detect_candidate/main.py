@@ -4,7 +4,6 @@ from typing import List
 from fastapi import FastAPI
 from pydantic import BaseModel
 from read_name import read_name
-from generate_mask import process_ballot
 from util import check_pesel
 from consts import BACKGROUND, MASK_PATH
 app = FastAPI()
@@ -37,10 +36,10 @@ async def test():
 
 
 @app.post('/mask')
-async def give_mask(candidates: List[str]):
+async def give_mask(num_candidates: int):
     if os.path.exists(MASK_PATH):
         os.remove(MASK_PATH)
-    process_ballot(candidates)
+    generate_mask(num_candidates)
 
     with open(MASK_PATH, "rb") as mask_file:
         mask_base64 = base64.b64encode(mask_file.read()).decode("utf-8")

@@ -17,6 +17,3 @@ def generate_mask(input_image_path: str, num_candidates: int, output_image_path:
     # Zapis obrazu z maską
     image.save(output_image_path)
 
-def process_ballot(candidates: List[str]):
-    num_candidates = len(candidates)
-    generate_mask(BACKGROUND, num_candidates, MASK_PATH)
