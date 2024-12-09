@@ -4,6 +4,8 @@ import '../fastapi/api_service.dart';  // Zaimportuj ApiService do sprawdzania P
 import 'main_screen.dart';  // Przekierowanie po poprawnym PESEL
 
 class LoginScreen extends StatefulWidget {
+
+
   @override
   _LoginScreenState createState() => _LoginScreenState();
 }
@@ -57,6 +59,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 decoration: InputDecoration(labelText: "PESEL"),
                 maxLength: 11,
                 keyboardType: TextInputType.number,
+                enableInteractiveSelection: false,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly], // Pozwól tylko na cyfry
                 validator: (value) {
                   if (value == null || value.isEmpty) {

@@ -44,6 +44,8 @@ def check_pesel(pesel: str):
         sum = 0
         for i, num in enumerate(numbers):
             sum += int(num) * weights[i]
+        if sum == 0:
+            return False
         sum = 10 - sum % 10
         if sum == 10:
             sum = 0
