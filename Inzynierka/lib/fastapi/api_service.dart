@@ -7,7 +7,7 @@ class ApiService {
   static Future<bool> validatePesel(String pesel) async {
     try {
       final response = await _dio.post(
-        'http://10.0.2.2:8000/login/$pesel', // Używaj localhosta dla emulatora
+        'http://192.168.99.165:5000/login/$pesel', // Używaj localhosta dla emulatora
       );
 
       if (response.statusCode == 200) {
@@ -26,7 +26,7 @@ class ApiService {
   static Future<String?> generateMask(int candidates) async {
     try {
       final response = await _dio.post(
-        'http://10.0.2.2:8000/mask',
+        'http://192.168.99.165:5000/mask',
         data: candidates,
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
