@@ -26,7 +26,7 @@ class ApiService {
   static Future<String?> generateMask(int candidates) async {
     try {
       final response = await _dio.post(
-        'http://192.168.99.165:5000/mask',
+        'http://192.168.99.165:5000/mask/$candidates',
         data: candidates,
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
