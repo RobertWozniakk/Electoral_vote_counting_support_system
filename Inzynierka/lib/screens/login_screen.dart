@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../fastapi/api_service.dart';  // Zaimportuj ApiService do sprawdzania PESEL
-import 'main_screen.dart';  // Przekierowanie po poprawnym PESEL
+import '../fastapi_utilities/api_service.dart';
+import 'main_screen.dart';
 
 class LoginScreen extends StatefulWidget {
 
@@ -14,21 +14,18 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _peselController = TextEditingController();
 
-  // Funkcja do walidacji PESEL
   void _validatePesel() async {
     if (_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Sprawdzanie PESEL...")),
       );
 
-      // Użycie ApiService do walidacji PESEL
       final isValid = await ApiService.validatePesel(_peselController.text);
 
       if (isValid) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("PESEL jest poprawny!")),
         );
-        // Przejdź na kolejny ekran (MainScreen)
         Navigator.push(
           context,
           MaterialPageRoute(

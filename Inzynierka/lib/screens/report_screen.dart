@@ -1,19 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:inzynierka/fastapi_utilities/utilities.dart';
 
-class ReportScreen extends StatelessWidget {
-  final String username;
-
-  ReportScreen({required this.username});
-
+class VotingResultsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final Map<String, int> voteResults = Utilities.voteCount;
+
     return Scaffold(
-      appBar: AppBar(title: Text("Raport")),
-      body: Center(
-        child: Text(
-          "Raport dla użytkownika: $username",
-          style: TextStyle(fontSize: 24),
-        ),
+      appBar: AppBar(
+        title: Text("Wyniki głosowania"),
+      ),
+      body: ListView.builder(
+        itemCount: voteResults.length,
+        itemBuilder: (context, index) {
+          final candidate = voteResults.keys.elementAt(index);
+          final votes = voteResults[candidate];
+          return ListTile(
+            title: Text(candidate),
+            trailing: Text("$votes głosów"),
+          );
+        },
       ),
     );
   }

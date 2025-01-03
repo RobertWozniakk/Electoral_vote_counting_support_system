@@ -1,9 +1,9 @@
-import 'dart:convert';
-
+import 'camera_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/services.dart';
-import '../fastapi/api_service.dart';
+import '../fastapi_utilities/api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MainScreen extends StatefulWidget {
   final String pesel;
@@ -15,33 +15,99 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  final List<String> candidates = []; // String przechowujący listę kandydatów
+  final List<String> candidates = [];
   final int maxCandidates = 14;
-  // Dodawanie kandydatów
+  final int maxConfigurations = 4;
+  final TextEditingController _nameController = TextEditingController();
+  String? _selectedOption = "Dodaj kandydatów";
+  Map<String, List<String>> savedConfigurations = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedConfigurations();
+  }
   void _addCandidate(String name) {
     if (candidates.length < maxCandidates) {
       setState(() {
         candidates.add(name);
       });
     } else {
-      // Wyświetl komunikat, że osiągnięto limit
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Osiągnięto maksymalną liczbę kandydatów ($maxCandidates).")),
       );
     }
   }
 
-  // Usuwanie kandydatów
   void _removeCandidate(int index) {
     setState(() {
       candidates.removeAt(index);
     });
   }
 
+  Future<void> _saveCurrentConfiguration(String configName) async {
+    if (candidates.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Nie można zapisać pustej listy kandydatów.")),
+      );
+      return;
+    }
+
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    if (savedConfigurations.length >= maxConfigurations) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Możesz zapisać jednocześnie do 4 konfiguracji.")),
+      );
+      return;
+    }
+
+    savedConfigurations[configName] = List.from(candidates);
+    await prefs.setStringList("config_$configName", candidates);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Konfiguracja '$configName' zapisana pomyślnie.")),
+    );
+  }
+
+  Future<void> _loadConfiguration(String configName) async {
+    if (savedConfigurations.containsKey(configName)) {
+      setState(() {
+        candidates.clear();
+        candidates.addAll(savedConfigurations[configName]!);
+        _selectedOption = "Dodaj kandydatów";
+      });
+    }
+  }
+
+  Future<void> _loadSavedConfigurations() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    Set<String> keys = prefs.getKeys();
+
+    for (String key in keys) {
+      if (key.startsWith("config_")) {
+        String configName = key.replaceFirst("config_","");
+        List<String>? candidateList = prefs.getStringList(key);
+        if (candidateList != null) {
+          savedConfigurations[configName] = candidateList;
+        }
+      }
+    }
+    setState(() {});
+  }
+
+  Future<void> _deleteConfiguration(String configName) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    savedConfigurations.remove(configName);
+    await prefs.remove("config_$configName");
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Konfiguracja '$configName' została usunięta."))
+    );
+    setState(() {});
+  }
   // Funkcja do otwierania dialogu
   void _showAddCandidateDialog() {
-    final TextEditingController _nameController = TextEditingController();
-
+    _nameController.clear();
     showDialog(
       context: context,
       builder: (context) {
@@ -55,7 +121,7 @@ class _MainScreenState extends State<MainScreen> {
             autocorrect: false,
             enableInteractiveSelection: false,
             inputFormatters: [
-              FilteringTextInputFormatter.allow(RegExp(r'[A-Za-zĄąĆćĘęŁłŃńÓóŚśŹźŻż ]')),
+              FilteringTextInputFormatter.allow(RegExp(r'[A-Za-zĄąĆćĘęŁłŃńÓóŚśŹźŻż\s-]')),
             ],
           ),
           actions: [
@@ -79,179 +145,204 @@ class _MainScreenState extends State<MainScreen> {
       },
     );
   }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text("Ekran Główny")),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Witaj, ${widget.pesel}, wprowadź dane kandydatów.",
-              style: TextStyle(fontSize: 20),
+  void _showSaveConfigurationDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        final TextEditingController _configNameController = TextEditingController();
+        return AlertDialog(
+          title: Text("Podaj nazwę konfiguracji"),
+          content: TextField(
+            controller: _configNameController,
+            decoration: InputDecoration(labelText: "Nazwa konfiguracji"),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text("Anuluj"),
             ),
-            SizedBox(height: 20),
             ElevatedButton(
-              onPressed: _showAddCandidateDialog,
-              child: Text("Dodaj kandydata"),
-            ),
-            SizedBox(height: 20),
-            Text(
-              "Lista kandydatów:",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            Expanded(
-              child: ListView.builder(
-                itemCount: candidates.length,
-                itemBuilder: (context, index) {
-                  return ListTile(
-                    title: Text(candidates[index]),
-                    trailing: IconButton(
-                      icon: Icon(Icons.delete, color: Colors.red),
-                      onPressed: () => _removeCandidate(index),
-                    ),
-                  );
-                },
-              ),
-            ),
-            SizedBox(height: 20),
-            Center(
-              child: ElevatedButton(
-                onPressed: () async {
-                  if (candidates.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text("Dodaj co najmniej jednego kandydata przed przejściem do kamery!")),
-                    );
-                    return;
-                  }
-
-                  // Wysyłanie listy kandydatów do backendu
-                  String? mask = await ApiService.generateMask(candidates.length);
-                  if (mask != null) {
-                    // Pobierz dostępne kamery
-                    final cameras = await availableCameras();
-
-                    // Przejdź do ekranu kamery z maską
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => CameraScreen(cameras: cameras, mask: mask),
-                      ),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text("Błąd podczas generowania maski.")),
-                    );
-                  }
-                },
-                child: Text("Przejdź do skanowania kart wyborczych"),
-              ),
+              onPressed: () {
+                if (_configNameController.text.isNotEmpty) {
+                  _saveCurrentConfiguration(_configNameController.text);
+                  Navigator.of(context).pop();
+                }
+              },
+              child: Text("Zapisz"),
             ),
           ],
-        ),
-      ),
+        );
+      },
     );
   }
-}
-
-// Ekran kamery
-class CameraScreen extends StatefulWidget {
-  final List<CameraDescription> cameras;
-  final String mask;
-  const CameraScreen({
-    Key? key,
-    required this.cameras,
-    required this.mask,
-  }) : super(key: key);
-
-  @override
-  _CameraScreenState createState() => _CameraScreenState();
-}
-
-class _CameraScreenState extends State<CameraScreen> {
-  late CameraController _controller;
-  bool _isCameraInitialized = false;
-  Image? _maskImage;
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.cameras.isNotEmpty) {
-      _controller = CameraController(
-        widget.cameras[0], // Wybierz pierwszą dostępną kamerę
-        ResolutionPreset.ultraHigh,
+  Future<void> _navigateToCameraScreen() async {
+    if (candidates.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Dodaj co najmniej jednego kandydata przed przejściem do kamery!")),
       );
-      _controller.initialize().then((_) {
-        if (!mounted) return;
-        setState(() {
-          _isCameraInitialized = true;
-        });
-      });
+      return;
     }
+    bool success = await ApiService.sendCandidates(candidates);
+    if (!success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Błąd wysyłania listy kandydatów na backend.")),
+      );
+      return;
+    }
+    String? mask = await ApiService.generateMask(candidates.length);
+    if (mask != null) {
+      final cameras = await availableCameras().catchError((error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Nie udało się uzyskać dostępu do kamery.")),
+        );
+        return null;
+      });
 
-    // Dekodowanie maski base64 na obraz
-    final bytes = base64Decode(widget.mask);
-    setState(() {
-      _maskImage = Image.memory(bytes);
-    });
+      if (cameras != null && cameras.isNotEmpty) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => CameraScreen(
+              mask: mask,
+              candidates: candidates,
+              cameras: cameras,
+            ),
+          ),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Błąd podczas generowania maski.")),
+      );
+    }
   }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
-    if (!_isCameraInitialized) {
-      return Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
     return Scaffold(
-      appBar: AppBar(title: Text("Skanuj kartę wyborczą")),
-      body: Stack(
-        children: [
-          CameraPreview(_controller),
-          if (_maskImage != null)
-            Positioned.fill(
-              child: Opacity(
-                opacity: 0.5,
-                child: _maskImage, // Wyświetlenie maski na podglądzie kamery
-              ),
-            ),
-          Positioned(
-            bottom: 20,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: ElevatedButton(
-                onPressed: () async {
-                  try {
-                    final image = await _controller.takePicture();
-                    // Tutaj możesz zapisać lub przetworzyć zdjęcie
-                    print('Zdjęcie zapisane w: ${image.path}');
-                  } catch (e) {
-                    print('Błąd: $e');
-                  }
-                },
-                child: Icon(Icons.camera, size: 30),
-                style: ElevatedButton.styleFrom(
-                  shape: CircleBorder(),
-                  padding: EdgeInsets.all(15),
-                ),
-              ),
-            ),
+      appBar: AppBar(
+        title: Text("Ekran Główny"),
+        actions: [
+          DropdownButton<String>(
+            value: _selectedOption,
+            onChanged: (String? newValue) {
+              setState(() {
+                _selectedOption = newValue;
+              });
+            },
+            items: <String>[
+              "Dodaj kandydatów",
+              "Zapisane konfiguracje",
+            ].map<DropdownMenuItem<String>>((String value) {
+              return DropdownMenuItem<String>(
+                value: value,
+                child: Text(value),
+              );
+            }).toList(),
           ),
         ],
       ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: _buildBody(),
+      ),
     );
   }
+
+  Widget _buildBody() {
+    if (_selectedOption == "Dodaj kandydatów") {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Witaj, ${widget.pesel}, wprowadź dane kandydatów.",
+            style: TextStyle(fontSize: 20),
+          ),
+          SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: _showAddCandidateDialog,
+            child: Text("Dodaj kandydata"),
+          ),
+          SizedBox(height: 20),
+          Text(
+            "Lista kandydatów:",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: candidates.length,
+              itemBuilder: (context, index) {
+                return ListTile(
+                  title: Text("${index+1}. ${candidates[index]}"),
+                  trailing: IconButton(
+                    icon: Icon(Icons.delete, color: Colors.red),
+                    onPressed: () => _removeCandidate(index),
+                  ),
+                );
+              },
+            ),
+          ),
+          SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              ElevatedButton(
+                onPressed: _showSaveConfigurationDialog,
+                child: Text("Zapisz", textAlign: TextAlign.center, style: TextStyle(fontSize: 18)),
+              ),
+              ElevatedButton(
+                onPressed: _navigateToCameraScreen,
+                child: Text("Skanuj", textAlign: TextAlign.center, style: TextStyle(fontSize: 18)),
+              ),
+            ],
+          ),
+        ],
+      );
+    } else if (_selectedOption == "Zapisane konfiguracje") {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Zapisane konfiguracje:",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: savedConfigurations.keys.length,
+              itemBuilder: (context, index) {
+                String configName = savedConfigurations.keys.elementAt(index);
+                return ListTile(
+                  title: Text(configName),
+                  subtitle: Text(savedConfigurations[configName]!.join(", ")),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        onPressed: () => _deleteConfiguration(configName),
+                        icon: Icon(Icons.delete, color: Colors.red),
+                      ),
+                      IconButton(
+                        onPressed: () => _loadConfiguration(configName),
+                        icon: Icon(Icons.upload, color: Colors.green),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      );
+    } else {
+      return Center(
+        child: Text("Wybierz opcję z menu."),
+      );
+    }
+  }
 }
+
+
 
 
 
